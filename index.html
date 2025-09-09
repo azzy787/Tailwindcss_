@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hi-Fi Sound Systems</title>
+  <script src="https://cdn.tailwindcss.com?plugins=aspect-ratio"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+  <!-- FIXED HEADER (4rem tall) -->
+  <header class="fixed inset-x-0 top-0 z-50 bg-white/90 backdrop-blur border-b">
+    <div class="max-w-7xl mx-auto h-16 px-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-lg font-semibold">Hi-Fi Sound Systems</span>
+        <span class="hidden sm:inline text-xs text-gray-500">v1.0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGE WRAPPER: offset everything under the fixed header -->
+  <div class="pt-16 flex min-h-screen">
+
+    <!-- SIDEBAR: sticky under header -->
+    <aside class="w-64 bg-white border-r shadow-md flex flex-col sticky top-16 h-[calc(100vh-4rem)]">
+      <div class="p-4 text-2xl font-bold">My App</div>
+
+      <nav class="px-2 space-y-1 flex-1 overflow-auto">
+        <!-- Dashboard w/ dropdown -->
+        <div class="relative">
+          <button id="btnDashboard"
+            class="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-gray-100"
+            aria-haspopup="true" aria-expanded="false">
+            <span>Dashboard</span>
+            <span id="chevDashboard" class="transition-transform">▾</span>
+          </button>
+
+          <div id="menuDashboard"
+            class="hidden absolute left-3 right-3 mt-1 z-10 rounded border bg-white shadow">
+            <a href="revenue.html" class="block px-3 py-2 hover:bg-gray-100">Revenue</a>
+            <a href="sales.html" class="block px-3 py-2 hover:bg-gray-100">Sales</a>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1">
+
+      <!-- Video (tall, with rounded corners and shadow) -->
+      <section class="w-full bg-black h-72 md:h-96 lg:h-[32rem] rounded-xl overflow-hidden shadow-lg">
+        <iframe class="w-full h-full"
+          src="https://www.youtube.com/embed/MlCqfK09u7A?rel=0&modestbranding=1"
+          title="Intro video" frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+      </section>
+
+      <!-- Headline -->
+      <section class="py-12">
+        <div class="max-w-5xl mx-auto px-6 text-center">
+          <h1 class="text-4xl font-extrabold">Acoustics</h1>
+          <p class="mt-4 text-lg text-gray-600">
+            Acoustics is the science of sound—how it’s generated, travels, and interacts
+            with rooms and materials. In audio product design it covers frequency response,
+            distortion, directivity, and psychoacoustics (how we perceive space and tone).
+            The goal is accurate, engaging playback with minimal coloration.          </p>
+          <a href="#"
+             class="mt-6 inline-block rounded bg-blue-600 text-white px-5 py-2.5 font-medium hover:bg-blue-700">
+            Read More
+          </a>
+        </div>
+      </section>
+
+      <!-- Two columns -->
+      <section class="py-12 bg-white">
+        <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-8">
+          <div class="rounded-2xl bg-gray-100 h-64 md:h-80 flex items-center justify-center">
+            <span class="text-gray-400">
+              <img src="./images/soundsystem.jpg" alt="Hi-fi sound system">
+            </span>
+          </div>
+          <div class="flex items-center">
+            <div>
+              <h2 class="text-2xl font-bold">Stereo Systems</h2>
+              <p class="mt-3 text-gray-600">
+                Stereo that blends digital precision with analog soul—DAC, amp, CD player, and a tactile equalizer with dancing VU meters.              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="border-t bg-gray-50">
+        <div class="max-w-6xl mx-auto px-6 py-6 text-sm text-gray-500">
+          All rights reserved &copy; 2025
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Dropdown script -->
+  <script>
+    const btn  = document.getElementById('btnDashboard');
+    const menu = document.getElementById('menuDashboard');
+    const chev = document.getElementById('chevDashboard');
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const hidden = menu.classList.toggle('hidden');
+      btn.setAttribute('aria-expanded', String(!hidden));
+      chev.style.transform = hidden ? 'rotate(0deg)' : 'rotate(180deg)';
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!menu.classList.contains('hidden') &&
+          !btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.add('hidden');
+        btn.setAttribute('aria-expanded', 'false');
+        chev.style.transform = 'rotate(0deg)';
+      }
+    });
+  </script>
+</body>
+</html>

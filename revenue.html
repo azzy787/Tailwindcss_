@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Revenue</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com?plugins=aspect-ratio"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1" defer></script>
+
+  <style>html{scroll-behavior:smooth}</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <!-- Top bar -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
+    <div class="max-w-7xl mx-auto h-14 px-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="text-lg font-semibold">Revenue Overview</div>
+        <span class="hidden sm:inline text-xs text-gray-500">Last 12 months</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-6 text-sm text-gray-600">
+        <a href="index.html" class="hover:text-gray-900">Home</a>
+        <a href="#charts" class="hover:text-gray-900">Charts</a>
+        <a href="#table" class="hover:text-gray-900">Table</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- PAGE WRAPPER: sidebar + main -->
+  <div class="flex min-h-screen">
+    <!-- Sidebar (sticky under h-14 header) -->
+    <aside class="w-64 flex-shrink-0 bg-white border-r shadow-md flex flex-col sticky top-14 h-[calc(100vh-3.5rem)]">
+      <div class="p-4 text-2xl font-bold">My App</div>
+      <nav class="px-2 space-y-1 flex-1 overflow-auto">
+        <div class="relative">
+          <button id="btnDashboard"
+            class="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-gray-100"
+            aria-haspopup="true" aria-expanded="false">
+            <span>Dashboard</span>
+            <span id="chevDashboard" class="transition-transform">▾</span>
+          </button>
+          <div id="menuDashboard"
+               class="hidden absolute left-3 right-3 mt-1 z-10 rounded border bg-white shadow">
+            <a href="revenue.html" class="block px-3 py-2 hover:bg-gray-100">Revenue</a>
+            <a href="sales.html" class="block px-3 py-2 hover:bg-gray-100">Sales</a>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1">
+      <div class="max-w-7xl mx-auto px-4 py-6 space-y-8">
+        <!-- KPI cards -->
+        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="rounded-2xl bg-white border p-5 shadow-sm">
+            <div class="text-sm text-gray-500">Revenue (MTD)</div>
+            <div id="kpiMTD" class="mt-1 text-3xl font-semibold">$0</div>
+            <div id="kpiMTDDelta" class="mt-1 text-xs text-gray-600"></div>
+          </div>
+          <div class="rounded-2xl bg-white border p-5 shadow-sm">
+            <div class="text-sm text-gray-500">Revenue (YTD)</div>
+            <div id="kpiYTD" class="mt-1 text-3xl font-semibold">$0</div>
+            <div id="kpiYTDDelta" class="mt-1 text-xs text-gray-600"></div>
+          </div>
+          <div class="rounded-2xl bg-white border p-5 shadow-sm">
+            <div class="text-sm text-gray-500">Gross Margin</div>
+            <div id="kpiGM" class="mt-1 text-3xl font-semibold">—</div>
+            <div class="mt-1 text-xs text-gray-600">Target ≥ 60%</div>
+          </div>
+        </section>
+
+        <!-- Charts -->
+        <section id="charts" class="grid gap-6 xl:grid-cols-3">
+          <div class="rounded-2xl bg-white border p-5 shadow-sm xl:col-span-2">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg font-semibold">Monthly Revenue</h2>
+              <div class="flex items-center gap-2">
+                <button data-mode="bar"  class="modeBtn rounded-md border px-2 py-1 text-sm hover:bg-gray-50">Bar</button>
+                <button data-mode="line" class="modeBtn rounded-md border px-2 py-1 text-sm hover:bg-gray-50">Line</button>
+                <button data-mode="area" class="modeBtn rounded-md border px-2 py-1 text-sm hover:bg-gray-50">Area</button>
+              </div>
+            </div>
+            <div class="h-[320px]"><canvas id="revMonthly"></canvas></div>
+          </div>
+
+          <div class="rounded-2xl bg-white border p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg font-semibold">Revenue by Channel</h2>
+              <span id="channelMonth" class="text-sm text-gray-500"></span>
+            </div>
+            <div class="h-[320px]"><canvas id="revChannels"></canvas></div>
+            <div id="channelLegend" class="mt-4 text-sm text-gray-600 space-y-1"></div>
+          </div>
+        </section>
+
+        <!-- Table -->
+        <section id="table" class="rounded-2xl bg-white border p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-semibold">Revenue Breakdown</h2>
+            <button id="btnExport" class="text-blue-600 text-sm hover:underline">Export CSV</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table id="revTable" class="min-w-full text-left text-sm">
+              <thead class="bg-gray-50 text-gray-700">
+                <tr>
+                  <th class="px-4 py-3">Date</th>
+                  <th class="px-4 py-3">Channel</th>
+                  <th class="px-4 py-3">Region</th>
+                  <th class="px-4 py-3">Orders</th>
+                  <th class="px-4 py-3">Avg. Order</th>
+                  <th class="px-4 py-3 text-right">Revenue</th>
+                  <th class="px-4 py-3 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody id="revBody" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+          <div class="mt-3 text-sm text-gray-500" id="tableMeta"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- App script -->
+  <script src="revenue.js" defer></script>
+</body>
+</html>

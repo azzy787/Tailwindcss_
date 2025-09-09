@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sales Dashboard</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com?plugins=aspect-ratio"></script>
+
+  <!-- Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0" defer></script>
+
+  <!-- CSV parser -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+
+  <!-- App logic -->
+  <script src="sales.js" defer></script>
+
+  <style>html{scroll-behavior:smooth}</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <!-- Top bar -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
+    <div class="max-w-7xl mx-auto h-14 px-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="text-lg font-semibold">Sales Dashboard</div>
+        <span class="hidden sm:inline text-xs text-gray-500">Live CSV-driven</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-6 text-sm text-gray-600">
+        <a href="index.html" class="hover:text-gray-900">Home</a>
+        <a href="#charts" class="hover:text-gray-900">Charts</a>
+        <a href="#table" class="hover:text-gray-900">Table</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- PAGE WRAPPER: sidebar + main -->
+  <div class="flex min-h-screen">
+    <!-- Sidebar (sticky under h-14 header) -->
+    <aside class="w-64 flex-shrink-0 bg-white border-r shadow-md flex flex-col sticky top-14 h-[calc(100vh-3.5rem)]">
+      <div class="p-4 text-2xl font-bold">My App</div>
+      <nav class="px-2 space-y-1 flex-1 overflow-auto">
+        <div class="relative">
+          <button id="btnDashboard"
+            class="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-gray-100"
+            aria-haspopup="true" aria-expanded="false">
+            <span>Dashboard</span>
+            <span id="chevDashboard" class="transition-transform">▾</span>
+          </button>
+          <div id="menuDashboard"
+               class="hidden absolute left-3 right-3 mt-1 z-10 rounded border bg-white shadow">
+            <a href="revenue.html" class="block px-3 py-2 hover:bg-gray-100">Revenue</a>
+            <a href="sales.html" class="block px-3 py-2 hover:bg-gray-100">Sales</a>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-8">
+    <!-- Controls -->
+    <section class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <!-- Upload -->
+      <label class="border rounded-xl bg-white p-3 flex items-center justify-between gap-3 shadow-sm">
+        <div>
+          <div class="font-medium">Upload CSV</div>
+          <div class="text-xs text-gray-500">Any headers — map after load</div>
+        </div>
+        <input id="csvFile" type="file" accept=".csv" class="text-sm">
+      </label>
+
+      <!-- Load by URL -->
+      <div class="border rounded-xl bg-white p-3 flex items-center gap-2 shadow-sm">
+        <input id="csvUrl" type="url" placeholder="https://example.com/sales.csv"
+          class="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-500/30">
+        <button id="btnLoadUrl"
+          class="shrink-0 rounded-md bg-blue-600 text-white text-sm px-3 py-2 hover:bg-blue-700">
+          Load URL
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="border rounded-xl bg-white p-3 flex items-center gap-2 shadow-sm">
+        <input id="search" type="search" placeholder="Search rows… (product, region, etc.)"
+          class="w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-500/30">
+      </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="border rounded-xl bg-white p-3 shadow-sm">
+        <div class="text-xs text-gray-500 mb-1">Date from</div>
+        <input id="dateFrom" type="date" class="w-full rounded-md border px-3 py-2 text-sm">
+      </div>
+      <div class="border rounded-xl bg-white p-3 shadow-sm">
+        <div class="text-xs text-gray-500 mb-1">Date to</div>
+        <input id="dateTo" type="date" class="w-full rounded-md border px-3 py-2 text-sm">
+      </div>
+      <div class="border rounded-xl bg-white p-3 shadow-sm">
+        <div class="text-xs text-gray-500 mb-1">Time bucket</div>
+        <select id="bucket" class="w-full rounded-md border px-3 py-2 text-sm">
+          <option value="day">Daily</option>
+          <option value="week">Weekly</option>
+          <option value="month" selected>Monthly</option>
+        </select>
+      </div>
+      <div class="border rounded-xl bg-white p-3 shadow-sm flex items-end justify-between gap-2">
+        <button id="btnReset" class="rounded-md border px-3 py-2 text-sm hover:bg-gray-50">Reset filters</button>
+        <button id="btnDownload" class="rounded-md bg-emerald-600 text-white px-3 py-2 text-sm hover:bg-emerald-700">
+          Download filtered CSV
+        </button>
+      </div>
+    </section>
+
+    <!-- KPI cards -->
+    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-2xl bg-white border p-5 shadow-sm">
+        <div class="text-sm text-gray-500">Rows</div>
+        <div id="kpiRows" class="mt-1 text-3xl font-semibold">0</div>
+      </div>
+      <div class="rounded-2xl bg-white border p-5 shadow-sm">
+        <div class="text-sm text-gray-500">Units sold</div>
+        <div id="kpiUnits" class="mt-1 text-3xl font-semibold">0</div>
+      </div>
+      <div class="rounded-2xl bg-white border p-5 shadow-sm">
+        <div class="text-sm text-gray-500">Total revenue</div>
+        <div id="kpiRevenue" class="mt-1 text-3xl font-semibold">$0</div>
+        <div id="kpiNote" class="text-xs text-gray-500 mt-1"></div>
+      </div>
+      <div class="rounded-2xl bg-white border p-5 shadow-sm">
+        <div class="text-sm text-gray-500">Avg order value</div>
+        <div id="kpiAOV" class="mt-1 text-3xl font-semibold">$0</div>
+      </div>
+    </section>
+
+    <!-- CHARTS -->
+    <section id="charts" class="space-y-6">
+      <div class="rounded-2xl bg-white border p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold">Revenue over time</h3>
+          <div class="flex items-center gap-2">
+            <button data-type="line" class="chartType rounded-md border px-2 py-1 text-sm hover:bg-gray-50">Line</button>
+            <button data-type="bar" class="chartType rounded-md border px-2 py-1 text-sm hover:bg-gray-50">Bar</button>
+            <button data-type="area" class="chartType rounded-md border px-2 py-1 text-sm hover:bg-gray-50">Area</button>
+          </div>
+        </div>
+        <div class="h-[320px]"><canvas id="chartTime"></canvas></div>
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-2xl bg-white border p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold">Revenue by product/category</h3>
+            <select id="topNProducts" class="rounded-md border px-2 py-1 text-sm">
+              <option value="5">Top 5</option>
+              <option value="10" selected>Top 10</option>
+              <option value="15">Top 15</option>
+            </select>
+          </div>
+          <div class="h-[380px]"><canvas id="chartProducts"></canvas></div>
+        </div>
+
+        <div class="rounded-2xl bg-white border p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold">Revenue by region</h3>
+          </div>
+          <div class="h-[380px]"><canvas id="chartRegions"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TABLE -->
+    <section id="table" class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Transactions</h3>
+        <div id="metaLoaded" class="text-sm text-gray-500"></div>
+      </div>
+
+      <div class="border rounded-2xl bg-white shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200" id="salesTable">
+            <thead class="bg-gray-50" id="tableHead"></thead>
+            <tbody class="divide-y divide-gray-100" id="tableBody"></tbody>
+          </table>
+        </div>
+        <div class="px-4 py-2 flex items-center justify-between text-sm text-gray-600">
+          <div id="pagerInfo"></div>
+          <div class="flex items-center gap-2">
+            <button id="prevPage" class="rounded-md border px-2 py-1 hover:bg-gray-50">Prev</button>
+            <span id="pageLabel"></span>
+            <button id="nextPage" class="rounded-md border px-2 py-1 hover:bg-gray-50">Next</button>
+            <select id="pageSize" class="rounded-md border px-2 py-1">
+              <option>10</option><option selected>25</option><option>50</option><option>100</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Column Mapping Modal -->
+  <div id="mapper" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/40"></div>
+    <div class="relative mx-auto mt-24 w-[min(720px,92vw)] rounded-2xl bg-white p-6 shadow-xl">
+      <h3 class="text-lg font-semibold">Map your CSV columns</h3>
+      <p class="text-sm text-gray-600 mb-4">We’ll use these to compute metrics and build charts.</p>
+      <div id="mapperWarn" class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2 hidden mb-3"></div>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div><label class="text-sm text-gray-600">Date</label><select id="mapDate" class="w-full rounded-md border px-3 py-2 text-sm"></select></div>
+        <div><label class="text-sm text-gray-600">Product/Category</label><select id="mapProduct" class="w-full rounded-md border px-3 py-2 text-sm"></select></div>
+        <div><label class="text-sm text-gray-600">Region</label><select id="mapRegion" class="w-full rounded-md border px-3 py-2 text-sm"></select></div>
+        <div><label class="text-sm text-gray-600">Quantity</label><select id="mapQty" class="w-full rounded-md border px-3 py-2 text-sm"></select></div>
+        <div><label class="text-sm text-gray-600">Price</label><select id="mapPrice" class="w-full rounded-md border px-3 py-2 text-sm"></select></div>
+        <div><label class="text-sm text-gray-600">Revenue (if present)</label><select id="mapRevenue" class="w-full rounded-md border px-3 py-2 text-sm"></select></div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 mt-5">
+        <button id="mapperCancel" class="rounded-md border px-3 py-2 text-sm hover:bg-gray-50">Cancel</button>
+        <button id="mapperApply" class="rounded-md bg-blue-600 text-white px-4 py-2 text-sm hover:bg-blue-700">Apply</button>
+      </div>
+    </div>
+  </div>
+ 
+  <script>
+    function wireSidebar() {
+    const btn  = document.getElementById('btnDashboard');
+    const menu = document.getElementById('menuDashboard');
+    const chev = document.getElementById('chevDashboard');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const hidden = menu.classList.toggle('hidden');
+      btn.setAttribute('aria-expanded', String(!hidden));
+      if (chev) chev.style.transform = hidden ? 'rotate(0deg)' : 'rotate(180deg)';
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!menu.classList.contains('hidden') &&
+          !btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.add('hidden');
+        btn.setAttribute('aria-expanded', 'false');
+        if (chev) chev.style.transform = 'rotate(0deg)';
+      }
+    });
+  }
+
+  wireSidebar();
+</script>
+
+</body>
+</html>
